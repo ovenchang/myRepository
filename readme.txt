@@ -316,3 +316,13 @@ App\Http\Middleware\TrustProxies
 配置可信主機
 App\Http\Middleware\TrustHosts
 ====================================================
+Response
+Illuminate\Http\Response
+return response('Hello World', 200)
+                  ->header('Content-Type', 'text/plain');
+返回Eloquent ORM模型和集合。 Laravel 會自動將模型和集合轉換為 JSON 響應，同時尊重模型的隱藏屬性：
+
+
+
+
+
