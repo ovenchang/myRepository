@@ -204,9 +204,115 @@ public function __construct(
 public function store(Request $request): RedirectResponse
 {
 =================================
+HTTP 請求
+Illuminate\Http\Request
+處理的當前 HTTP 請求進行交互，檢索隨請求提交的輸入、cookie 和文件
 
+與請求交互
 
+accessing 請求
+路由閉包或控制器方法上對類進行類型提示。傳入的請求實例將由 Laravel服務容器自動注入
+Route::put('/user/{user}', [UserController::class, 'update']);
+Request 先 路由參數 後
+public function store(update $request,User $user): RedirectResponse
+    {
+        $name = $request->input('name');
 
+請求路徑、主機和方法
+$uri = $request->path(); foo/bar
+$request->is('admin/*')  是否與route匹配
+$request->routeIs('admin.*') 是否與命名路由匹配
+$request->url()
+$request->fullUrl()包含查詢字符串
+$request->fullUrlWithQuery(['type' => 'phone']);與當前查詢url 合併
+$request->host(); abc.joke.at.tw
+$request->httpHost();abc.joke.at.tw
+$request->schemeAndHttpHost();http://abc.joke.at.tw
+$request->isMethod('post')
+$request->header('X-Header-Name', 'default'); //沒有就用defalut
+$request->bearerToken() 用於從Authorization報頭中檢索承載token
+$request->ip();
+$request->getAcceptableContentTypes();請求接受的content types
+if ($request->accepts(['text/html', 'application/json']))
 
+request 輸入
+$request->all();
+$request->collect();
+$request->input('name', 'Sally');//沒有就用Sally
+$request->input('products.0.name'); 
+$request->input('products.*.name');
+$request->query('name', 'Helen');
 
+檢索 JSON 輸入值
+JSON 請求
+$name = $request->input('user.name');
 
+通過動態屬性檢索輸入
+$name = $request->name;
+
+檢索輸入數據的一部分
+$request->only(['username', 'password']);
+$request->except(['credit_card']);
+
+確定是否存在所有指定query key
+if ($request->has(['name', 'email']))
+$request->whenHas('name', function (string $input) {
+    // 如果存在
+}, function () {
+    // 如果不存在
+});
+
+一個query key值是否出現在請求中並且不是空字符串
+上面改成 filled whenFilled
+
+是否缺少給定的query key
+上面改成 missing whenMissing
+
+修改query值
+$request->merge(['votes' => 0]);
+
+如果query key不存在 加上key value
+$request->mergeIfMissing(['votes' => 0]);
+
+檢索 Cookie
+$value = $request->cookie('name');
+
+舊輸入
+在下一個請求期間保留來自一個請求的輸入
+
+暫存Input到Session
+$request->flash();
+重定向
+return redirect('form')->withInput();
+return redirect()->route('user.create')->withInput();
+檢索舊輸入
+$username = $request->old('username');
+blade顯示舊輸入
+<input type="text" name="username" value="{{ old('username') }}">
+
+文件
+https://github.com/symfony/symfony/blob/6.0/src/Symfony/Component/HttpFoundation/File/UploadedFile.php
+檢索上傳的文件
+返回Illuminate\Http\UploadedFile類的一個實例
+$file = $request->file('photo');
+$file = $request->photo;
+
+是否存在文件
+if ($request->hasFile('photo'))
+
+驗證成功上傳
+if ($request->file('photo')->isValid()) {
+
+文件路徑和擴展名
+$path = $request->photo->path();
+$extension = $request->photo->extension();
+
+存儲上傳的文件 
+相對於文件系統配置的根目錄的文件存儲路徑、文件名和磁盤名
+$path = $request->photo->storeAs('images', 'filename.jpg', 's3');
+
+配置可信代理
+App\Http\Middleware\TrustProxies
+配置可信主機
+App\Http\Middleware\TrustHosts
+====================================================
