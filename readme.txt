@@ -516,8 +516,36 @@ $loop->parent	在嵌套循環中時，父循環變量。
 @endphp
 
 ===============================================================
+URL Generation
 
+生成網址
+echo url("/posts/{$post->id}");
+http://example.com/posts/1
 
+訪問當前 URL
+echo url()->current();
+echo url()->full();
+echo url()->previous();
 
+命名路由的 URL
+echo route('post.show', ['post' => 1]);
+//路徑 參數名
+echo route('post.show', ['post' => 1, 'search' => 'rocket']);
+http://example.com/post/1?search=rocket
 
+簽名網址
+return URL::signedRoute('unsubscribe', ['user' => 1]);
 
+指定時間後過期的臨時簽名路由 URL
+return URL::temporarySignedRoute(
+    'unsubscribe', now()->addMinutes(30), ['user' => 1]
+);
+
+驗證簽名的路由是否有用
+    if (! $request->hasValidSignature()) { abort(401);}
+    
+    
+控制器操作的 URL
+$url = action([UserController::class, 'profile'], ['id' => 1]);
+
+======================================
