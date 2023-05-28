@@ -412,3 +412,112 @@ public function boot(): void{ View::share('key', 'value');}
 
 視圖組合器
 https://hoohoo.top/blog/laravel-view-composer-introduction/
+==============================
+Blade 模板
+顯示數據
+return view('welcome', ['name' => 'Samantha']);
+Hello, {{ $name }}
+{{ time() }}
+
+{{ }}語句會自動通過 PHP 的函數發送htmlspecialchars
+不希望數據被轉義
+{!! $name !!}
+
+使用該符號@來通知 Blade 渲染引擎表達式應該保持不變
+@{{ name }}
+
+呈現 JSON
+var app = <?php echo json_encode($array); ?>;
+//把給定的對像或數組轉換為有效的 JavaScript 對象
+var app = {{ Illuminate\Support\Js::from($array) }};
+var app = {{ Js::from($array) }};
+ 
+//多個js變數 用verbatim包起來
+@verbatim
+    <div class="container">
+        Hello, {{ name }}.
+    </div>
+@endverbatim
+
+blade指令
+
+如果語句
+@if (count($records) === 1)
+    I have one record!
+@elseif (count($records) > 1)
+    I have multiple records!
+@else
+    I don't have any records!
+@endif
+
+@isset($records)
+    // $records is defined and is not null...
+@endisset
+ 
+@empty($records)
+    // $records is "empty"...
+@endempty
+
+身份驗證指令
+@auth ... @endauth
+@guest ... @endguest
+@auth('admin')... @endauth
+@guest('admin')... @endguest
+ 
+ 環境指令
+@production...@endproduction
+@env('staging')...@endenv
+@env(['staging', 'production'])...@endenv
+
+部分指令
+
+開關語句
+@switch($i)
+    @case(1)
+        @break
+    @default
+@endswitch
+
+循環
+@for ($i = 0; $i < 10; $i++)...{{ $i }}...@endfor
+
+//foreach，您可以使用循環變量來獲取有關循環的有價值信息
+// @if ($loop->first)  @if ($loop->last)
+//嵌套循環 @if ($loop->parent->first) 上一層
+//$loop->index	當前循環迭代的索引（從 0 開始）。
+$loop->iteration	當前循環迭代（從 1 開始）。
+$loop->remaining	循環中剩餘的迭代。
+$loop->count	正在迭代的數組中的項目總數。
+$loop->first	這是否是循環中的第一次迭代。
+$loop->last	這是否是循環中的最後一次迭代。
+$loop->even	這是否是循環中的偶數迭代。
+$loop->odd	這是否是循環中的奇數迭代。
+$loop->depth	當前循環的嵌套層級。
+$loop->parent	在嵌套循環中時，父循環變量。
+@foreach ($users as $user)... {{ $user->id }}...@endforeach
+ 
+@forelse ($users as $user)
+    <li>{{ $user->name }}</li>
+@empty
+    <p>No users</p>
+@endforelse
+@while (true)...@endwhile
+
+@continue  
+@break 
+@continue($user->type == 1)
+@break($user->number == 5)
+
+包含子視圖。對父視圖可用的所有變量都將對子視圖可用
+@include('view.name', ['status' => 'complete'])
+
+@php
+    $counter = 1;
+@endphp
+
+===============================================================
+
+
+
+
+
