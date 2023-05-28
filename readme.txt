@@ -397,3 +397,18 @@ public function boot(): void
 }
 //使用
 return response()->caps('foo');
+============================
+View
+嵌套視圖目錄
+return view('admin.profile', $data);
+創建存在於給定視圖數組中的第一個視圖
+return View::first(['custom.admin', 'admin'], $data);
+視圖是否存在
+if (View::exists('emails.customer'))
+
+所有視圖共享數據
+加到App\Providers\AppServiceProvider類中或生成一個單獨的服務提供者
+public function boot(): void{ View::share('key', 'value');}
+
+視圖組合器
+https://hoohoo.top/blog/laravel-view-composer-introduction/
