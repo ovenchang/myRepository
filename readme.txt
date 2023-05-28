@@ -320,9 +320,80 @@ Response
 Illuminate\Http\Response
 return response('Hello World', 200)
                   ->header('Content-Type', 'text/plain');
-返回Eloquent ORM模型和集合。 Laravel 會自動將模型和集合轉換為 JSON 響應，同時尊重模型的隱藏屬性：
+返回Eloquent ORM模型和集合。 Laravel 會自動將模型和集合轉換為 JSON 響應，同時尊重模型的隱藏屬性：protected $hidden = ['password'];
 
+將header附加到response
+response($content)->withHeaders(['Content-Type' => $type,...]);
 
+緩存控制中間件
+Laravel 包含一個cache.headers中間件
+https://blog.techbridge.cc/2017/06/17/cache-introduction/
 
+將 Cookie 附加到response
+$cookie = cookie('name', 'value', $minutes);
+response('Hello World')->cookie($cookie);
+想確保 cookie 與傳出響應一起發送
+Cookie::queue('name', 'value', $minutes);
+刪除 cookie
+response('Hello World')->withoutCookie('name');
 
+重定向
+redirect('home/dashboard');
+望將用戶重定向到他們以前的位置
+back()->withInput();
 
+重定向到命名路由 有參數
+redirect()->route('profile', ['id' => 1]);
+通過 Eloquent 模型填充參數
+redirect()->route('profile', [$user]);
+
+想自訂放置在路由參數中的值，你可以在路由參數定義中指定列 ( /profile/{id:slug}) 或者你可以覆蓋getRouteKeyEloquent 模型上的方法：
+public function getRouteKey(): mixed {return $this->slug;}
+
+重定向到控制器操作 有參數
+return redirect()->action([UserController::class,'index']['id'=>1]);
+
+重定向到外部域
+return redirect()->away('https://www.google.com');
+
+重定向並閃存session
+return redirect('dashboard')->with('status', 'Profile updated!');
+blade 
+@if (session('status'))
+    <div>{{ session('status') }} </div>
+@endif
+
+response 類型
+需要控制響應的狀態和標頭，但還需要返回一個視圖
+return response()->view('hello', $data, 200)->header('Content-Type', $type);
+
+json
+return response()->json(['name' => 'Abigail',]);
+
+JSONP
+return response()->json(['name' => 'Abigail''])->withCallback($request->input('callback'));
+
+文件下載
+// 文件路徑   用戶看到的文件名 標頭數組
+return response()->download($pathToFile, $name, $headers);
+
+下載不存入disk
+use App\Services\GitHub;
+return response()->streamDownload(function () {
+    echo GitHub::api('repo')->contents()->readme('laravel', 'laravel')['contents'];
+}, 'laravel-readme.md');
+
+直接在瀏覽器中顯示文件
+return response()->file($pathToFile, $headers); //header array
+
+自訂response
+通常，您應該從應用程序的服務提供者boot之一的方法中調用此方法
+例如服務提供者：App\Providers\AppServiceProvider
+public function boot(): void
+{
+   Response::macro('caps', function (string $value) {
+     return Response::make(strtoupper($value));
+   });
+}
+//使用
+return response()->caps('foo');
