@@ -648,21 +648,135 @@ $title = $request->old('title');
 
 創建表單請求
 更複雜的驗證方案，您可能希望創建“表單請求” 封裝其自己的驗證和授權邏輯的自定義請求類
-1.php artisan make:request StorePostRequest
+1.php artisan make:request StorePostRequest    app/Http/Requests
 2.在StorePostRequest裡
+//可以確定經過身份驗證的使用者是否確實有權更新給定資源
+public function authorize(): bool
+{
+    $comment = Comment::find($this->route('comment'));
+    return $comment && $this->user()->can('update', $comment);
+    //如果不需身份驗證 return true
+
+}
+
+//要驗證的欄位 可以在方法的簽名中鍵入提示所需的任何依賴項
 public function rules(): array
 {
     return ['title' => 'required|unique:posts|max:255'];
 }
 
+//有時需要在初始驗證完成後執行其他驗證
+public function after(): array
+{
+    return [
+        function (Validator $validator) {
+            if ($this->somethingElseIsInvalid()) {
+                $validator->errors()->add(
+                    'field',
+                    'Something is wrong with this field!'
+                );
+            }
+        }
+    ];
+}
+//自訂錯誤消息
+public function messages(): array
+{
+    return ['title.required' => 'A title is required'];
+}
+//自訂驗證屬性
+public function attributes(): array
+{
+    return ['email' => 'email address'];
+}
+//驗證規則之前準備或清理請求中的任何數據
+protected function prepareForValidation(): void{
+    $this->merge([
+            'slug' => Str::slug($this->slug),
+        ]);
+   }
+
+//驗證完成後規範化任何請求數據
+protected function passedValidation(): void{
+    $this->replace(['name' => 'Taylor']);
+}
+
+protected $stopOnFirstFailure = true; //在第一次驗證失敗時停止
+protected $redirect = '/dashboard'; //自定義重定向位置
+protected $redirectRoute = 'dashboard';//使用者重定向到命名路由
+
+3.控制器方法上鍵入提示請求
+public function store(StorePostRequest $request): RedirectResponse
+{ 
+    $validated = $request->validated();
+ 
+    // 部份要被驗證的data
+    $validated = $request->safe()->only(['name', 'email']); //array
+    $validated = $request->safe()->except(['name', 'email']);//array
+}
+ 
+// Validated data may be accessed as an array...
+$validated = $request->safe();
+ 
+$email = $validated['email'];
+    //驗證成功
+    return redirect('/posts');
+}
 
 
+驗證失敗，將重定向回應，將用戶發送回其之前的位置。錯誤也將閃爍到會話中，以便顯示它們。
+如果是 XHR 請求，則將向使用者返回具有422狀態代碼的 HTTP 回應，包括驗證錯誤的 JSON 表示形式.
 
 
+在控制器中 手動創建驗證器
 
+public function store(Request $request): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|unique:posts|max:255' ]);//->->validate()自動重定向
+        
+        //$inpu=>$request->all()要驗證的資訊
+        //$rules=>['title' => 'required|unique:posts|max:255' ]
+        //$messages = [ 'required' => 'The :attribute  ....' ]自訂錯誤消息 可選
+        //$attr = [ 'email' => 'email address' ]自訂屬性值 可選
+        $validator = Validator::make($input, $rules, $messages,$attr);->validate()自動重定向 就         不用下面的$va..->fail()
+        
+        if ($validator->fails()) { //...->stopOnFirstFailure()->fails()首次驗證失敗時停止
+            return redirect('post/create')->withErrors($validator)->withInput();
+        }
+        //初始驗證完成後執行其他驗證
+        $validator->after(function ($validator) {
+            if ($this->somethingElseIsInvalid()) {
+                $validator->errors()->add('field', 'Something is wrong..!');
+            }
+        });
+        //????
+        $validator->after([
+            new ValidateUserStatus,
+            new ValidateShippingTime,
+            function ($validator) {
+                // ...
+            },
+        ]);
+        
+        //取得驗證過資料
+        $validated = $validator->validated();
+        $validated = $validator->safe();//array
+        $request->safe()->collect();//collection
+        $validated = $validator->safe()->only(['name', 'email']);
+        $validated = $validator->safe()->except(['name', 'email']);
+        
+        //處理錯誤訊息
+        $errors = $validator->errors();
+        foreach ($errors->get('email') as $message){}
+        foreach ($errors->all() as $message) {}
+        if ($errors->has('email')) {}
+        
+        
+        //成功
+        return redirect('/posts');
+    }
 
-
-
-
-
-
+在語言檔中指定自訂消息
+lang/en/validation.php 複製到
+lang/zh/validation.php
