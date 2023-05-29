@@ -598,6 +598,71 @@ $request->session()->regenerate();
 傳統 HTTP 請求期間驗證失敗，將生成對上一個 URL 的重定向回應。
 如果傳入請求是 XHR 請求，則包含驗證錯誤消息的 JSON 回應將被退回。
 
+邏輯編寫
+$validated = $request->validate([
+    //bail 首次驗證失敗時停止
+    'title' => ''bail|required|unique:posts', //陣列寫法 =>['required', 'unique:posts'],
+    'author.name' => 'required', //嵌套屬性
+    'publish_at' => 'nullable|date',//可選欄位 nullable
+]);
+ return redirect('/posts'); //邏輯成功
+
+驗證請求並將任何錯誤消息存儲在validateWithBag
+$validatedData = $request->validateWithBag('post', [
+    'title' => ['required', 'unique:posts', 'max:255']
+]);
+
+顯示驗證錯誤
+會自動將使用者重定向回他們之前的位置。
+此外，所有驗證錯誤和請求輸入將自動閃到會話.
+@if ($errors->any())
+    @foreach ($errors->all() as $error)
+      <li>{{ $error }}</li>
+    @endforeach
+    @error('title')
+        <div class="alert alert-danger">{{ $message }}</div>
+    @enderror
+    @error('title', 'post') is-invalid @enderror //使用命名錯誤包 post 包名稱
+@endif
+
+自訂錯誤消息
+lang/en/validation.php
+可以將此檔案複製到其他語言目錄，以翻譯應用程式語言的消息
+
+XHR 請求和驗證
+Laravel會生成一個validate包含所有驗證錯誤的 JSON 回應.使用 422 HTTP 狀態代碼發送
+{
+    "message": "The team name must be a string. (and 4 more errors)",
+    "errors": {
+        "team_name": ["The team name must be a string.",],
+        "authorization.role": ["The selected authorization.role is invalid."],
+        "users.2.email": [ "The users.2.email must be a valid email address." ]
+    }
+}
+
+重新填充表單
+$title = $request->old('title');
+<input type="text" name="title" value="{{ old('title') }}">
+
+表單請求驗證
+
+創建表單請求
+更複雜的驗證方案，您可能希望創建“表單請求” 封裝其自己的驗證和授權邏輯的自定義請求類
+1.php artisan make:request StorePostRequest
+2.在StorePostRequest裡
+public function rules(): array
+{
+    return ['title' => 'required|unique:posts|max:255'];
+}
+
+
+
+
+
+
+
+
+
 
 
 
