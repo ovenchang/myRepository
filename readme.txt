@@ -549,3 +549,47 @@ return URL::temporarySignedRoute(
 $url = action([UserController::class, 'profile'], ['id' => 1]);
 
 ======================================
+Session
+
+file- 工作階段儲存在 中。storage/framework/sessions
+cookie- 會話存儲在安全的加密 Cookie 中。
+database- 工作階段儲存在關係資料庫中。
+memcached / redis- 工作階段儲存在這些基於緩存的快速存儲之一中。
+dynamodb- 工作階段儲存在 AWS DynamoDB 中。
+array- 工作階段存儲在 PHP 陣列中，不會被持久化。
+
+database 需要創建一個表來包含會話記錄 https://laravel.com/docs/10.x/session#driver-prerequisites
+
+//取得數據
+$request->session()->get('key', function () { return 'default';.. //請求的鍵不存在，則將執行閉包 可選
+$value = session('key', 'default'); //default可選
+$request->session()->all();
+
+//存session
+$request->session()->put('key', 'value');
+session(['key' => 'value']); 
+$request->session()->push('user.teams', 'developers'); //存到陣列
+
+//是否存在
+if ($request->session()->has('users')) {
+if ($request->session()->exists('users')) {
+
+//刪除
+session->pull('key')
+$request->session()->forget(['name', 'status']); //陣列 字串
+$request->session()->flush();//所有
+
+//遞增和遞減
+$request->session()->increment('count', $incrementBy = 2); //每次加2 可選
+
+//存快閃
+存儲讓下次請求使用
+$request->session()->flash('status', 'Task was successful!'); //加一個快閃
+$request->session()->reflash();//存所有快閃
+$request->session()->keep(['username', 'email']);//存某些快閃
+$request->session()->now('status', 'Task was successful!');//僅為當前請求保留快閃
+
+重新生成會話ID
+防止惡意使用者利用會話固定攻擊
+$request->session()->regenerate();
+======================================================
