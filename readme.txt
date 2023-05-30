@@ -729,7 +729,7 @@ $email = $validated['email'];
 
 
 在控制器中 手動創建驗證器
-
+使用Validator Facade手動創建一個驗證器實例
 public function store(Request $request): RedirectResponse
     {
         $validator = Validator::make($request->all(), [
@@ -780,3 +780,86 @@ public function store(Request $request): RedirectResponse
 在語言檔中指定自訂消息
 lang/en/validation.php 複製到
 lang/zh/validation.php
+
+lang/zh/validation.php裡面
+● 特定屬性的自定義消息
+'custom' => [
+'email' => ['required' => 'We need to know your email address!'],
+'person.*.email' => ['unique' => 'Each person must have a unique email address']
+],
+● 指定屬性
+內置錯誤消息包含一個:attribute佔位符，該佔位符被替換為驗證中的字段或屬性的名稱。如果您希望:attribute將驗證消息的部分替換為自定義值
+'attributes' => [ 'email' => 'email address'],
+● 指定值
+有時可能需要將:value驗證消息的一部分替換為值的自定義表示
+Validator::make($request->all(), [ 'credit_card_number' => 'required_if:payment_type,cc']);
+驗證規則失敗，它將產生以下錯誤消息：
+The credit card number field is required when payment type is cc.
+可以通過定義一個數組在您的語言文件cc中指定一個更加用戶友好的值表示
+'values' => ['payment_type' => ['cc' => 'credit card']],
+定義此值後，驗證規則將產生以下錯誤消息：
+The credit card number field is required when payment type is credit card.
+
+有條件地添加規則
+● 當字段具有特定值時跳過驗證
+//如果has_appointment欄位的值是false appointment_date不驗證
+
+$validator = Validator::make($data, [
+    'has_appointment' => 'required|boolean',
+    'appointment_date' => 'exclude_if:has_appointment,false|required|date',
+    'email' => 'sometimes|required|email', //email存在時 $data才會被驗證
+● 複雜的條件驗證
+//如果回調函數回傳true 則驗證規則 到 給定的欄位
+$validator->sometimes(['reason', 'cost'], 'required', function (Fluent $input) {
+    return $input->games >= 100;
+});
+● 複雜條件數組驗證
+$input = ['channels' => [ ['type' => 'email','address' => 'abigail@example.com']]];
+$validator->sometimes('channels.*.address', 'email', function (Fluent $input, Fluent $item) {
+    return $item->type === 'email';
+});
+
+驗證數組
+● 驗證嵌套數組輸入
+$validator = Validator::make($request->all(), [
+    'person.*.email' => 'email|unique:users',
+    'person.*.first_name' => 'required_with:person.*.last_name',
+]);
+● 訪問嵌套數組數據
+.................
+
+錯誤信息索引和位置
+驗證數組時，引用驗證失敗的特定項的索引或位置
+$input = [
+    'photos' => [
+        [
+            'name' => 'BeachVacation.jpg',
+            'description' => 'A photo of my beach vacation!',
+        ],
+    ],
+];
+Validator::validate($input, [
+    'photos.*.description' => 'required',
+], [
+    'photos.*.description.required' => 'Please describe photo #:position.', //position =1
+]);
+
+驗證文件
+Validator::validate($input, [
+    'attachment' => ['required',
+        File::types(['mp3', 'wav'])->min(1024)->max(12 * 1024)
+        ->dimensions(Rule::dimensions()->maxWidth(1000)->maxHeight(500)),
+    ],
+]);
+
+驗證密碼
+//確保密碼具有足夠的複雜性，可以使用Password規則對象
+            最少字元  至少一英文字   一大寫一小寫  至少一數字  至少一符號  是否有被泄露
+//Password::min(8)   ->letters()  ->mixedCase()->numbers()->symbols()->uncompromised()
+$validator = Validator::make($request->all(), [
+    'password' => ['required', 'confirmed', Password::min(8)],
+]);
+=================================================================================
+
+
+
