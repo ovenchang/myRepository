@@ -63,12 +63,67 @@ Log::stack(['single', 'slack'])->info('Something happened!');
 
 ======================================================================
 Artisan 控制台
+Artisan 是 Laravel 附帶的命令行界面
+
+編寫命令
+可以構建自己的自定義命令
+命令通常存儲在app/Console/Commands
+● 生成命令
+php artisan make:command SendEmails
+● 命令結構
+class SendEmails extends Command
+{
+   //{user?}可選參數 {user=foo}带有默认值的可选参数
+   //{user*} 陣列 1 2 3  {user?*} 0或多個
+   //artisan 的 option  {--queue} 有些可以有值 {--queue=} 給預設值 {--queue=abc}
+   // option 陣列 {--id=*}  --id=1  id=2
+   protected $signature = 'mail:send {user}'; // php artisan mail:send john
+    protected $description = 'Send a marketing email to a user';
+    //執行 可注入依賴類
+    public function handle(DripEmailer $drip): void
+    {
+        $drip->send(User::find($this->argument('user')));
+        $arguments = $this->arguments();//檢索陣列
+        $queueName = $this->option('queue');//檢索option
+        $options = $this->options();//檢索option陣列
+        $name = $this->ask('What is your name?');//用戶輸入答案 傳回命令
+        $password = $this->secret('What is the password?');
+        if ($this->confirm('Do you wish to continue?',true)) { //參數二 預設不填傳回
+           y會傳回 true
+         }
+         
+         //從其他命令調用命令
+         $this->call('sms_message:send', ['user' => 1, '--queue' => 'default']);
+         
+    }
+}
+
+● 用閉包產生命令
+可以在routes/console.php加上一些命令
+也可以使用類型約束從 服務容器 中解析其他的依賴關係
+use App\Models\User;
+use App\Support\DripEmailer;
+
+Artisan::command('mail:send {user}', function (DripEmailer $drip, string $user) {
+    $drip->send(User::find($user));
+})->purpose('Send a marketing email to a user'); //purpose使用php artisan help 命令時，將顯示描述
 
 
+路由或controller執行命令
+Route::post('/user/{user}/mail', function (string $user) {
+    $exitCode = Artisan::call('mail:send', ['user' => $user, '--queue' => 'default']);
+    $exitCode = Artisan::call('mail:send', ['--id' => [5, 13],'--f'=>true]); //傳陣列 布林
+    Artisan::call('mail:send 1 --queue=default');//這也可以
+});
 
+隊列Artisan 命令
+Artisan::queue('mail:send', ['user' => $user, '--queue' => 'default']);
+    
+指定Artisan 命令應分派到的連接或隊列
+Artisan::queue('mail:send', ['user' => 1, '--queue' => 'default'])
+->onConnection('redis')->onQueue('commands');
 
-
-
-
-
-
+事件
+當Artisan 開始運行時，會立即調度 ArtisanStarting 事件。
+接下來，在命令運行之前立即調度 CommandStarting 事件。
+最後，一旦命令執行完畢，就會調度 CommandFinished 事件
