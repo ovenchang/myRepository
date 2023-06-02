@@ -1,0 +1,74 @@
+記錄
+日誌記錄基於“channels”。
+每個channel代表一種寫入日誌信息的特定方式。
+例如，single channel將日誌文件寫入單個日誌文件，而slack channel將日誌消息發送到 Slack。
+日誌消息可能會根據其嚴重性寫入多個channels
+
+所有配置選項都包含在config/logging.php
+將在記錄消息時使用stack通道
+'stack' => [
+    'driver' => 'stack',
+    'name' => 'channel-name',
+    'channels' => ['single', 'slack'],
+],
+
+可用的通道驅動程序 driver
+custom	    調用指定工廠創建通道的驅動程序
+daily	      RotatingFileHandler每天輪換的基於 Monolog 的驅動程序
+errorlog	  一個ErrorLogHandler基於 Monolog 的驅動程序
+monolog	    可以使用任何受支持的 Monolog 處理程序的 Monolog 工廠驅動程序
+null	      丟棄所有日誌消息的驅動程序
+papertrail	一個SyslogUdpHandler基於 Monolog 的驅動程序
+single	    基於單個文件或路徑的記錄器通道 ( StreamHandler)
+slack	      一個SlackWebhookHandler基於 Monolog 的驅動程序
+stack	      便於創建“多渠道”渠道的包裝器
+syslog	    一個SyslogHandler基於 Monolog 的驅動程序
+
+
+每個driver的先決條件
+https://laravel.com/docs/10.x/logging#channel-prerequisites
+
+日誌級別 嚴重 >>> 輕微
+emergency、alert、critical、error、warning、notice、info和debug
+
+寫入日誌消息
+Log::info('Showing the user profile for user: {id}', ['id' => $id]);
+
+
+希望指定一些上下文信息，這些信息應該包含在特定頻道中的所有後續日誌條目中
+加一個中間件
+namespace App\Http\Middleware;
+class AssignRequestId
+{
+  public function handle(Request $request, Closure $next): Response
+    {
+        $requestId = (string) Str::uuid();
+        Log::withContext([ 'request-id' => $requestId]);
+        return $next($request)->header('Request-Id', $requestId);
+    }
+}
+
+所有頻道都要指定上下文
+app/Providers/AppServiceProvider.php
+public function boot(): void
+{
+   Log::shareContext(['invocation-id' => (string) Str::uuid(),]);
+}
+
+寫入特定頻道
+Log::channel('slack')->info('Something happened!');
+
+多個通道組成的按需日誌堆棧
+Log::stack(['single', 'slack'])->info('Something happened!');
+
+======================================================================
+Artisan 控制台
+
+
+
+
+
+
+
+
+
